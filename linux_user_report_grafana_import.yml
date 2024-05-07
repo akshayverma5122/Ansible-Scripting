@@ -1,0 +1,53 @@
+---
+- name: grafana import
+  hosts: ansusr@10.51.8.137
+  become: yes
+  gather_facts: true
+  vars:
+   ansible_controller_path: /var/lib/awx/Linux_Server_user_report
+  tasks:
+    - name: Include vars
+      include_vars:
+         file: Linux_vault_cred_report.yml
+         name: Linux_vault_cred_report
+
+    - name: check the user report directory is present inisde /tmp in 10.51.8.137
+      stat:
+         path: /tmp/user_report
+      register: user_report
+ 
+    - name: delete the user report directory if it is already there
+      file:
+          path: /tmp/user_report
+          state: absent
+      when: user_report.stat.exists == true 
+
+    - name: create user report directory in 10.51.8.137 inside /tmp
+      file:
+          path: /tmp/user_report
+          state: directory
+          owner: root
+          mode: '0777'
+      
+    - name: copy the user report file from ansible controller to 10.51.8.137
+      copy: 
+         src: "{{ansible_controller_path}}/linux_user_data.csv"
+         dest: /tmp/user_report/linux_user_data.csv
+         owner: root
+         mode: '0777'
+      register: report
+  
+    - name: create new file in 10.51.8.137
+      file:
+          path: /tmp/user_report/linux_user_data.csv
+          state: touch
+          owner: root
+          mode: '0777'
+      when: (report.changed == False) and (report.failed == True)
+         
+    
+    - name: delete the user's old data from the linux_user_data table in mysql db
+      shell: mysql -u root -p{{Linux_vault_cred_report.mysqlrootpass}} grafanadb -e "truncate table linux_user_data"
+
+    - name: injecting the user's new data in linux_user_data table in mysql db
+      shell: mysqlimport -h localhost -p3306 --ignore-lines=1 --fields-terminated-by=',' --fields-enclosed-by='"' --lines-terminated-by='\r\n' -c user_with_uid,Hostname,IpAddress --verbose --local  -u root -p{{Linux_vault_cred_report.mysqlrootpass}}  grafanadb '/tmp/user_report/linux_user_data.csv'
