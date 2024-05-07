@@ -1,0 +1,78 @@
+---
+- name: this playbook will collect the user report from the endpoint server and upload in the ansible controller machine 
+  hosts: all
+  gather_facts: true 
+  become: yes
+
+  vars:
+     client_path: /tmp
+     ansible_controller_path: /var/lib/awx
+
+  tasks:
+  - name: check if user report directory is present in the endpoint server
+    stat: 
+        path: "{{client_path}}/ansible_report"
+    register: ansible_report
+
+  - name: delete the user report directory in the endpoint server
+    file: 
+        path: "{{client_path}}/ansible_report"
+        state: absent
+    when: ansible_report.stat.exists == true
+ 
+  - name: create the user report directory in the endpoint server
+    file:
+        path: "{{client_path}}/ansible_report"
+        state: directory
+        owner: root
+        group: root
+        mode: '0644'
+
+  - name: create the user report file in the endpoint server
+    file: 
+        path: "{{client_path}}/ansible_report/userlist_{{ansible_hostname}}.csv"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+
+  - name: insert the header information in the user report file 
+    shell: "echo user_with_uid,Hostname,IPAddress  > {{client_path}}/ansible_report/userlist_{{ansible_hostname}}.csv"
+
+  - name: insert the user information in the user report file 
+    shell: "echo $(awk -F: '{if(($3 >= 1000)&&($3 <65534)) print $1,$3}' /etc/passwd) ,{{ansible_hostname}},{{ansible_default_ipv4.address}} >>  {{client_path}}/ansible_report/userlist_{{ansible_hostname}}.csv"
+  
+  - name: check if user report directory is present in the Ansible controller machine 
+    stat: 
+        path: "{{ansible_controller_path}}/Linux_Server_user_report"
+    register: Linux_Server_user_report
+    delegate_to: localhost
+
+  - name: delete the user report directory in the Ansible controller machine 
+    file:
+        path: "{{ansible_controller_path}}/Linux_Server_user_report"
+        state: absent
+    when: Linux_Server_user_report.stat.exists == true
+    delegate_to: localhost
+
+  - name: create the user report directory in the Ansible controller machine  
+    file:
+        path: "{{ansible_controller_path}}/Linux_Server_user_report"
+        state: directory
+        owner: root
+        group: root
+        mode: '0644'
+    delegate_to: localhost
+
+  - name: copy the user report file from endpoint server to Ansible controller Node
+    fetch:
+      src: "{{client_path}}/ansible_report/userlist_{{ansible_hostname}}.csv"
+      dest: "{{ansible_controller_path}}/Linux_Server_user_report/userlist_{{ansible_hostname}}.csv"
+      flat: yes
+    
+
+  - name: merge the user report file into single file using python script
+    shell: 'python3 LinuxUserMerger.py {{ansible_controller_path}}/Linux_Server_user_report/userlist_{{ansible_hostname}}.csv {{ansible_controller_path}}/Linux_Server_user_report/linux_user_data.csv'
+    with_items:
+        - "{{ ansible_hostname }}"
+    delegate_to: localhost 
