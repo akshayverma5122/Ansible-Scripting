@@ -1,0 +1,137 @@
+########################################################
+#endregion --enable-admission-plugins
+########################################################
+
+
+- name: "SCORED | 1.2.18 | PATCH | L1 | MASTER | Ensure that the --insecure-bind-address argument is not set"
+  lineinfile:
+    path: "{{ api_server_pod_specification_file }}"
+    state: absent
+    backup: yes
+    regexp: '^\s+- --insecure-bind-address=.*'
+  when:
+    - rule_1_2_18
+  tags:
+    - level1
+    - perms
+    - patch
+    - rule_1.2.18
+    - master
+
+#Speelman | Works, but having issue with joining group one (\1) followed by a literal number
+- name: "SCORED | 1.2.19 | PATCH | L1 | MASTER | Ensure that the --insecure-port argument is set to {{ insecure_port }}"
+  block:
+  - name: "SCORED | 1.2.19 | PATCH | L1 | MASTER | If argument '--insecure-port' does not exist, add it"
+    lineinfile:
+      path: "{{ api_server_pod_specification_file }}"
+      state: present
+      regexp: '^(\s+- --insecure-port=).*$'
+      line: '    - --insecure-port={{ insecure_port }}'
+      insertafter: '^\s+- kube-apiserver$'
+      backup: yes
+  - name: "SCORED | 1.2.19 | PATCH | L1 | MASTER | Ensure that the --insecure-port argument is set to {{ insecure_port }}"
+    lineinfile:
+      path: "{{ api_server_pod_specification_file }}"
+      state: present
+      regexp: '^(\s+- --insecure-port=)(?!{{ insecure_port }}).*$'
+      line: '    - --insecure-port={{ insecure_port }}'
+      insertafter: '^\s+- kube-apiserver$'
+      backrefs: true
+      backup: yes
+  when:
+    - rule_1_2_19
+  tags:
+    - level1
+    - perms
+    - patch
+    - rule_1.2.19
+    - master
+    - followup
+    
+
+    
+
+#Speelman | Works, but having issue with combining group one (\1) followed by a literal number
+- name: "SCORED | 1.2.20 | PATCH | L1 | MASTER | Ensure that the --secure-port argument is not set to {{ secure_port }}"
+  block:
+  - name: "SCORED | 1.2.20 | PATCH | L1 | MASTER | If argument '--secure-port' does not exist, add it"
+    lineinfile:
+      path: "{{ api_server_pod_specification_file }}"
+      state: present
+      regexp: '^(\s+- --secure-port=).*$'
+      line: '    - --secure-port={{ secure_port }}'
+      insertafter: '^\s+- kube-apiserver$'
+      backup: yes
+  - name: "SCORED | 1.2.20 | PATCH | L1 | MASTER | Ensure that the --secure-port argument is not set to {{ secure_port }}"
+    lineinfile:
+      path: "{{ api_server_pod_specification_file }}"
+      state: present
+      regexp: '^(\s+- --secure-port=)(?!{{ secure_port }}).*$'
+      line: '    - --secure-port={{ secure_port }}'
+      #Issues with these variations:
+      #line: '\1{{ secure_port }}'
+      #line: '\{1}8443'
+      #line: '\1`8443'
+      #line: '\1\84430'
+      #line: '\1{8443}'
+      #line: '${1}1234'
+      #line: '\1(?P=car)'
+      insertafter: '^\s+- kube-apiserver$'
+      backrefs: true
+      backup: yes
+  when:
+    - rule_1_2_20
+  tags:
+    - level1
+    - perms
+    - patch
+    - rule_1.2.20
+    - master
+    - followup
+
+
+- name: "SCORED | 1.2.21 | PATCH | L1 | MASTER | Ensure that the --profiling argument is set to false"
+  block:
+  - name: "SCORED | 1.2.21 | PATCH | L1 | MASTER | If argument '--profiling does not exist', add it"
+    lineinfile:
+      path: "{{ api_server_pod_specification_file }}"
+      state: present
+      regexp: '^(\s+- --profiling=).*$'
+      line: '    - --profiling=false'
+      insertafter: '^\s+- kube-apiserver$'
+      backup: yes
+  - name: "SCORED | 1.2.21 | PATCH | L1 | MASTER | Ensure that the --profiling argument is set to false"
+    lineinfile:
+      path: "{{ api_server_pod_specification_file }}"
+      state: present
+      regexp: '^(\s+- --profiling=)(?!false).*$'
+      line: '\1false'
+      insertafter: '^\s+- kube-apiserver$'
+      backrefs: true
+      backup: yes
+  when:
+    - rule_1_2_21
+  tags:
+    - level1
+    - perms
+    - patch
+    - rule_1.2.21
+    - master
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

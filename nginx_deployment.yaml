@@ -1,0 +1,67 @@
+---
+- name: this playbook will be used to deploy the application is nginx 
+  hosts: localhost
+  become: yes
+  gather_facts: true
+
+  vars:
+    app_binary_path: /tmp/application_code/ 
+    app_deployment_path: /var/www/html/
+
+  tasks:
+
+  - name: check if nginx is installed 
+    stat:
+        path: /usr/sbin/nginx 
+    ignore_errors: yes
+    register: nginx_state
+
+  - name: check if nginx is running
+    service:
+        name: nginx
+    register: service_state
+ 
+  - name: stop the nginx service if it is running 
+    service:
+        name: nginx
+        state: stopped 
+    when: service_state.status.ActiveState == 'active' 
+        
+
+  - name: remove if nginx is installed
+    apt:
+      name: nginx
+      state: absent
+      autoremove: yes
+      purge: true
+    register: nginx_removal
+    when: nginx_state.stat.exists == true
+
+  - debug:
+         msg: "{{ nginx_removal }}"
+  
+  - name: install the nginx 
+    apt:
+       name: nginx 
+       state: present
+    register: nginx_installed_status
+    notify: restart nginx server
+
+  - name: move the default index file to other location
+    shell: mv "{{ app_deployment_path }}"/*.html   /tmp/
+    
+
+  - name: deploy the application
+    copy:
+        src: "{{ app_binary_path }}"
+        dest: "{{ app_deployment_path }}"  
+
+  handlers:
+     - name: restart nginx server
+       service:
+             name: nginx 
+             state: restarted
+
+
+
+  

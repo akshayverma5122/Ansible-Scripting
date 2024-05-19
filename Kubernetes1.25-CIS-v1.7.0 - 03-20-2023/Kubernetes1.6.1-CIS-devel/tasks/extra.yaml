@@ -1,0 +1,14 @@
+- name: "SCORED | 1.2.2 | PATCH | L1 | MASTER | Ensure that the --basic-auth-file argument is not set"
+  lineinfile:
+    path: "{{ api_server_pod_specification_file }}"
+    state: absent
+    backup: yes
+    regexp: '^\s+- --basic-auth-file=.*'
+  when:
+    - rule_1_2_2
+  tags:
+    - level1
+    - perms
+    - patch
+    - rule_1.2.2
+    - master
