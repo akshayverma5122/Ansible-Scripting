@@ -6,3 +6,11 @@ This repository contains the  following ansible scripts -
 4. RHEL Linux user report
 5. Windows server 2016 and 2019 hardening
 6. RHEL Linux generic user password reset
+
+
+Ansible Commands 
+##### Run the ansible playbook ########
+ansible-playbook < playbook name >
+
+##### Run the ansible playbook in check mode ########
+ansible-playbook < playbook name > --check --diff
