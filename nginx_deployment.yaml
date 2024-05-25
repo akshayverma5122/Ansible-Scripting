@@ -1,6 +1,6 @@
 ---
 - name: this playbook will be used to deploy the application is nginx 
-  hosts: localhost
+  hosts: all
   become: yes
   gather_facts: true
 
