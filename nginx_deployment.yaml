@@ -51,10 +51,12 @@
     shell: mv "{{ app_deployment_path }}"/*.html   /tmp/
     
 
-  - name: deploy the application
-    copy:
-        src: "{{ app_binary_path }}"
-        dest: "{{ app_deployment_path }}"  
+  - name: deploy the application  
+    copy:      
+ #       src: "{{ app_binary_path }}"
+        dest: "{{ app_deployment_path }}"/app.html
+        content: | 
+              NGINX app is deployed
 
   handlers:
      - name: restart nginx server
